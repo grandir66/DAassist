@@ -4,7 +4,7 @@
 
 ```bash
 # 1. Pull ultime modifiche
-cd /root/daassist
+cd /opt/daassist
 git pull
 
 # 2. Ferma tutto
