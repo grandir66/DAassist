@@ -53,18 +53,22 @@ echo ""
 
 # Variabili configurabili
 INSTALL_DIR="/opt/daassist"
-DOMAIN=""
-EMAIL=""
-ENABLE_SSL=false
+DOMAIN="${DOMAIN:-}"
+EMAIL="${EMAIL:-}"
+ENABLE_SSL="${ENABLE_SSL:-false}"
 
-# Richiedi configurazione
-read -p "Inserisci il dominio (lascia vuoto per localhost): " DOMAIN
-if [ -n "$DOMAIN" ]; then
-    read -p "Vuoi abilitare SSL con Let's Encrypt? (y/n): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        ENABLE_SSL=true
-        read -p "Inserisci email per Let's Encrypt: " EMAIL
+# Se eseguito con parametri, usa quelli
+# Uso: DOMAIN=example.com EMAIL=admin@example.com ENABLE_SSL=true ./lxc-install.sh
+if [ -z "$DOMAIN" ] && [ -t 0 ]; then
+    # Solo se stdin è un terminale (esecuzione interattiva)
+    read -p "Inserisci il dominio (lascia vuoto per localhost): " DOMAIN
+    if [ -n "$DOMAIN" ]; then
+        read -p "Vuoi abilitare SSL con Let's Encrypt? (y/n): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            ENABLE_SSL=true
+            read -p "Inserisci email per Let's Encrypt: " EMAIL
+        fi
     fi
 fi
 
@@ -252,16 +256,15 @@ success "   Installazione completata!"
 info "=========================================="
 echo ""
 info "Accedi all'applicazione:"
-if [ -n "$DOMAIN" ]; then
-    if [ "$ENABLE_SSL" = true ]; then
-        echo -e "  ${GREEN}https://$DOMAIN${NC}"
-    else
-        echo -e "  ${GREEN}http://$DOMAIN${NC}"
-    fi
+if [ -n "$DOMAIN" ] && [ "$ENABLE_SSL" = "true" ]; then
+    echo -e "  ${GREEN}https://$DOMAIN${NC}"
+elif [ -n "$DOMAIN" ]; then
+    echo -e "  ${GREEN}http://$DOMAIN${NC}"
 else
-    echo -e "  Frontend: ${GREEN}http://$(hostname -I | awk '{print $1}'):5173${NC}"
-    echo -e "  Backend:  ${GREEN}http://$(hostname -I | awk '{print $1}'):8000${NC}"
-    echo -e "  API Docs: ${GREEN}http://$(hostname -I | awk '{print $1}'):8000/docs${NC}"
+    IP_ADDR=$(hostname -I | awk '{print $1}')
+    echo -e "  Frontend: ${GREEN}http://${IP_ADDR}:5173${NC}"
+    echo -e "  Backend:  ${GREEN}http://${IP_ADDR}:8000${NC}"
+    echo -e "  API Docs: ${GREEN}http://${IP_ADDR}:8000/docs${NC}"
 fi
 echo ""
 info "Credenziali default:"
