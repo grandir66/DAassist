@@ -169,16 +169,16 @@ success "Firewall configurato"
 
 # Avvio servizi
 info "Avvio servizi Docker..."
-docker-compose down 2>/dev/null || true
-docker-compose pull
-docker-compose up -d --build
+docker compose down 2>/dev/null || true
+docker compose pull
+docker compose up -d --build
 
 # Attendi che i servizi siano pronti
 info "Attesa avvio servizi..."
 sleep 10
 
 # Verifica stato servizi
-if docker-compose ps | grep -q "Up"; then
+if docker compose ps | grep -q "Up"; then
     success "Servizi avviati correttamente"
 else
     error "Errore nell'avvio dei servizi"
