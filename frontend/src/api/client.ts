@@ -1,8 +1,20 @@
 import axios from 'axios';
 
-// Use relative URL to leverage Vite proxy in development
-// In production, this should be set via VITE_API_URL environment variable
-const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
+// In Docker, we need to use the host's window.location to reach the backend
+// The backend is exposed on the same host at port 8000
+const getApiUrl = () => {
+  // If VITE_API_URL is set, use it
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+
+  // In Docker/production, construct URL from current host
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+  return `${protocol}//${hostname}:8000/api/v1`;
+};
+
+const API_URL = getApiUrl();
 
 export const apiClient = axios.create({
   baseURL: API_URL,
