@@ -1,0 +1,317 @@
+# DAAssist - Cursor Rules
+
+## Architettura del Progetto
+
+### Backend (FastAPI + Python 3.9)
+- **Framework**: FastAPI 0.109+
+- **Database**: PostgreSQL 14 (locale) + SQL Server (gestionale, opzionale)
+- **ORM**: SQLAlchemy 2.0
+- **Migrations**: Alembic
+- **Auth**: JWT (jose) + bcrypt password hashing
+- **Python Version**: 3.9 (usare `Optional[Type]` invece di `Type | None`)
+
+### Frontend (React 18 + TypeScript + Vite)
+- **Framework**: React 18 con TypeScript strict mode
+- **Build**: Vite 5.x
+- **Routing**: React Router v6
+- **State**: Zustand per stato globale
+- **HTTP Client**: Axios
+- **Styling**: TailwindCSS 3.x
+- **Icons**: lucide-react
+
+## Regole di Coding
+
+### Backend Python
+
+1. **Compatibilità Python 3.9**
+   - ❌ NO: `str | None`, `int | None`, `list[str]`
+   - ✅ SI: `Optional[str]`, `Optional[int]`, `List[str]`
+   - Sempre importare: `from typing import Optional, List, Dict, Any`
+
+2. **Modelli SQLAlchemy**
+   - Tutti i modelli ereditano da `BaseModel` (include id, created_at, updated_at, attivo)
+   - Usare `Column(Integer, default=True/False)` per boolean (non Boolean type)
+   - Relationship lazy="joined" per dati sempre necessari
+   - Gestire circular dependencies con `use_alter=True` nelle FK
+
+3. **API Endpoints**
+   - Usare Pydantic BaseModel per request/response schemas
+   - Config: `from_attributes = True` (non `orm_mode`)
+   - Sempre validare FK existence prima di create/update
+   - Soft delete: `attivo = False` invece di DELETE fisico
+   - Response models: separare Create/Update/Response schemas
+   - Paginazione standard: `page`, `limit`, ritorno con `total`
+
+4. **Conversioni Numeric/Decimal**
+   - DB usa `Numeric(10, 2)` per importi/ore
+   - Convertire con: `Decimal(str(value))` mai `Decimal(value)`
+   - Response API: convertire a `float` se necessario
+
+5. **Datetime**
+   - Sempre `datetime.utcnow()` per timestamp
+   - Campo `ultimo_sync` per dati cache dal gestionale
+
+### Frontend TypeScript/React
+
+1. **Componenti**
+   - Functional components con TypeScript
+   - Props sempre tipizzate con interface
+   - Usare hooks (useState, useEffect, custom hooks)
+   - Export default per page components
+
+2. **API Client**
+   - Centralizzato in `src/api/`
+   - Un file per dominio (tickets.ts, clients.ts, etc.)
+   - Interface per ogni entity con campi snake_case (match backend)
+   - Usare `apiClient` (axios instance) da `client.ts`
+
+3. **State Management**
+   - Zustand per auth e stato globale (`stores/`)
+   - Local state (useState) per UI temporanea
+   - No Redux (troppo verboso per questo progetto)
+
+4. **Styling**
+   - TailwindCSS utility-first
+   - Colori semantici: `bg-blue-600`, `text-gray-900`
+   - Responsive: mobile-first con breakpoints `md:`, `lg:`
+   - Badge colori: usare campo `colore` da lookup tables
+
+5. **Forms & Modals**
+   - Modal centered con backdrop blur
+   - Form validation con HTML5 + custom checks
+   - Loading states durante submit
+   - Error handling con alert/toast
+
+6. **Routing**
+   - Pattern: `/entity` per lista, `/entity/:id` per dettaglio
+   - Protected routes con `<ProtectedRoute>` wrapper
+   - Navigate programmaticamente con `useNavigate()`
+
+## Convenzioni di Naming
+
+### Backend
+- **Files**: snake_case (e.g., `ticket_detail.py`)
+- **Classes**: PascalCase (e.g., `TicketResponse`)
+- **Functions**: snake_case (e.g., `get_ticket_by_id`)
+- **DB Tables**: snake_case (e.g., `cache_clienti`)
+- **DB Columns**: snake_case (e.g., `ragione_sociale`)
+
+### Frontend
+- **Files**: PascalCase per components (e.g., `TicketDetail.tsx`)
+- **Files**: camelCase per utils/api (e.g., `tickets.ts`)
+- **Components**: PascalCase (e.g., `TicketList`)
+- **Functions**: camelCase (e.g., `loadTickets`)
+- **Interfaces**: PascalCase (e.g., `Ticket`, `TicketFilters`)
+
+## Pattern Comuni
+
+### Backend CRUD Endpoint
+```python
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.orm import Session
+from typing import List, Optional
+from datetime import datetime
+from app.database import get_db
+from app.api.v1.auth import get_current_user
+from app.models.user import Tecnico
+from pydantic import BaseModel
+
+router = APIRouter()
+
+class EntityCreate(BaseModel):
+    field: str
+    optional_field: Optional[str] = None
+
+class EntityUpdate(BaseModel):
+    field: Optional[str] = None
+
+class EntityResponse(BaseModel):
+    id: int
+    field: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+@router.get("", response_model=List[EntityResponse])
+async def get_entities(
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=100),
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: Tecnico = Depends(get_current_user)
+):
+    query = db.query(Entity)
+    if search:
+        query = query.filter(Entity.field.ilike(f"%{search}%"))
+
+    total = query.count()
+    items = query.offset((page-1)*limit).limit(limit).all()
+    return items
+
+@router.post("", response_model=EntityResponse, status_code=status.HTTP_201_CREATED)
+async def create_entity(
+    data: EntityCreate,
+    db: Session = Depends(get_db),
+    current_user: Tecnico = Depends(get_current_user)
+):
+    entity = Entity(**data.dict(), created_at=datetime.utcnow(), updated_at=datetime.utcnow())
+    db.add(entity)
+    db.commit()
+    db.refresh(entity)
+    return entity
+```
+
+### Frontend Page Component
+```typescript
+import { useState, useEffect } from 'react';
+import { entityApi, Entity } from '../api/entity';
+
+export default function EntityList() {
+  const [entities, setEntities] = useState<Entity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    loadEntities();
+  }, [search]);
+
+  const loadEntities = async () => {
+    try {
+      setLoading(true);
+      const data = await entityApi.getAll({ search });
+      setEntities(data.items);
+    } catch (error) {
+      console.error('Failed to load entities:', error);
+      alert('Errore nel caricamento');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div>Caricamento...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Entities</h1>
+      {/* Content */}
+    </div>
+  );
+}
+```
+
+## Database
+
+### Cache Tables (dal gestionale)
+- Prefisso: `cache_` (e.g., `cache_clienti`, `cache_contratti`)
+- Sempre campi: `codice_gestionale`, `ultimo_sync`, `hash_dati`
+- Sync gestionale tramite stored procedures o API esterne
+
+### Lookup Tables
+- Prefisso: `lookup_` (e.g., `lookup_priorita`, `lookup_stati_ticket`)
+- Sempre campi: `codice`, `descrizione`, `ordine`, `attivo`
+- Popolate da `populate_lookups.py`
+- Read-only in produzione (gestite da admin)
+
+### Tabelle Principali
+- `ticket`, `interventi`, `tecnici`, `asset`, `kb_articoli`, etc.
+- Tutte con BaseModel (id, created_at, updated_at, attivo)
+- Foreign Keys con `index=True` per performance
+- Cascade delete solo dove appropriato (note, allegati, etc.)
+
+## Best Practices
+
+1. **Non ripetere codice**: creare utility functions riusabili
+2. **Validazione**: sempre validare input utente (backend + frontend)
+3. **Error Handling**: try/catch con messaggi user-friendly
+4. **Security**:
+   - No SQL injection (usa ORM correttamente)
+   - No XSS (React auto-escape, ma attento a dangerouslySetInnerHTML)
+   - Validare permessi utente negli endpoint
+5. **Performance**:
+   - Paginazione sempre per liste
+   - Lazy loading per relationship opzionali
+   - Index su FK e campi search frequenti
+6. **Testing**: priorità a endpoint critici (auth, create ticket, etc.)
+
+## File Structure
+
+```
+DAAssist/
+├── backend/
+│   ├── app/
+│   │   ├── api/v1/          # Endpoints
+│   │   ├── models/          # SQLAlchemy models
+│   │   ├── schemas/         # Pydantic schemas (se separati)
+│   │   ├── core/            # Config, security, exceptions
+│   │   ├── repositories/    # Business logic (optional)
+│   │   └── database.py
+│   ├── alembic/             # Migrations
+│   ├── populate_lookups.py
+│   └── requirements.txt
+└── frontend/
+    ├── src/
+    │   ├── api/             # API clients
+    │   ├── components/      # Reusable components
+    │   ├── pages/           # Page components
+    │   ├── stores/          # Zustand stores
+    │   └── App.tsx
+    └── package.json
+```
+
+## Comandi Utili
+
+### Backend
+```bash
+# Avvio dev
+cd backend && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Migrations
+alembic revision --autogenerate -m "message"
+alembic upgrade head
+
+# Populate lookups
+python3 populate_lookups.py
+```
+
+### Frontend
+```bash
+# Avvio dev
+cd frontend && npm run dev
+
+# Build production
+npm run build
+```
+
+## Note Importanti
+
+- ⚠️ SQL Server (gestionale) è **opzionale**: app funziona solo con PostgreSQL
+- ⚠️ User admin default: `username: admin, password: admin` (cambiare in prod!)
+- ⚠️ JWT_SECRET_KEY deve essere strong in produzione (.env)
+- ⚠️ Boolean in DB sono `Integer` (0/1) non `Boolean` type
+- ⚠️ Sempre usare soft-delete (`attivo=False`) per audit trail
+- ⚠️ Python 3.9 syntax: no pipe unions, no match/case statements
+
+## Prossimi Development
+
+Quando implementi nuove features:
+
+1. **Backend first**: modello → migration → endpoint → test con /docs
+2. **Frontend after**: API client → page component → routing → menu
+3. **Sempre**: leggere codice esistente per pattern consistency
+4. **Testing**: testare manualmente con dati reali prima di commit
+5. **Git**: commit atomici con messaggi descrittivi
+
+## Lookup Tables Disponibili
+
+- `lookup_canali_richiesta` (EMAIL, TELEFONO, PORTALE, etc.)
+- `lookup_priorita` (CRITICA, URGENTE, ALTA, NORMALE, BASSA)
+- `lookup_stati_ticket` (NUOVO, PRESO_CARICO, IN_LAVORAZIONE, etc.)
+- `lookup_stati_intervento` (PIANIFICATO, IN_CORSO, COMPLETATO, etc.)
+- `lookup_tipi_intervento` (PRESSO_CLIENTE, REMOTO, TELEFONICO, etc.)
+- `lookup_categorie_attivita` (SUPPORTO, INSTALLAZIONE, FORMAZIONE, etc.)
+- `lookup_origini_intervento` (DA_TICKET, DA_PIANIFICAZIONE, etc.)
+- `lookup_reparti` (HELPDESK, SISTEMISTICA, SVILUPPO, RETI)
+- `lookup_ruoli_utente` (ADMIN, MANAGER, TECNICO_SENIOR, TECNICO, USER)
