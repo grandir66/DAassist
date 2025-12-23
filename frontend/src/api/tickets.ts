@@ -59,6 +59,8 @@ export interface TicketCreate {
   richiedente_nome?: string;
   richiedente_email?: string;
   richiedente_telefono?: string;
+  referente_id?: number;
+  referente_nome?: string;
 }
 
 export interface TicketUpdate {
@@ -66,6 +68,8 @@ export interface TicketUpdate {
   descrizione?: string;
   priorita_id?: number;
   categoria_id?: number;
+  stato_id?: number;
+  tecnico_assegnato_id?: number;
 }
 
 export interface TicketAssignRequest {
@@ -91,6 +95,7 @@ export interface TicketFilters {
   stato_id?: number;
   priorita_id?: number;
   tecnico_id?: number;
+  tecnico_assegnato_id?: number;
   cliente_id?: number;
   search?: string;
 }

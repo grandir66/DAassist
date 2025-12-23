@@ -32,6 +32,7 @@ export interface Contratto {
   cliente_id: number;
   codice_gestionale: string;
   descrizione: string;
+  tipologia_descrizione?: string;
   data_inizio?: string;
   data_fine?: string;
   ore_incluse?: number;

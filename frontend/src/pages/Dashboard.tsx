@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Ticket, Wrench, CheckCircle, Clock, MapPin, TrendingUp } from 'lucide-react';
-import { dashboardApi, type DashboardData, type TicketRecente, type InterventoOggi } from '@/api/dashboard';
+import { dashboardApi, type DashboardData } from '@/api/dashboard';
 
 export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);

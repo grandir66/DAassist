@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Select from '@/components/ui/Select';
-import { Plus, Search, Filter, Clock, MapPin, X } from 'lucide-react';
+import { Plus, Search, Filter, MapPin, X } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import { interventiApi, type Intervento, type InterventoFilters } from '@/api/interventions';
 import { lookupApi, type State } from '@/api/lookup';
@@ -95,13 +95,13 @@ export default function Interventions() {
     return colors[codice || ''] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
 
-  const formatDurata = (minuti: number) => {
-    const ore = Math.floor(minuti / 60);
-    const min = minuti % 60;
-    if (ore === 0) return `${min}m`;
-    if (min === 0) return `${ore}h`;
-    return `${ore}h ${min}m`;
-  };
+  // const formatDurata = (minuti: number) => {
+  //   const ore = Math.floor(minuti / 60);
+  //   const min = minuti % 60;
+  //   if (ore === 0) return `${min}m`;
+  //   if (min === 0) return `${ore}h`;
+  //   return `${ore}h ${min}m`;
+  // };
 
   return (
     <div className="space-y-6">

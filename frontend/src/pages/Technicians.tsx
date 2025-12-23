@@ -144,17 +144,17 @@ export default function Technicians() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Confermi la disattivazione del tecnico?')) return;
-
-    try {
-      await techniciansApi.delete(id);
-      loadTechnicians();
-    } catch (error) {
-      console.error('Failed to delete technician:', error);
-      alert('Errore nella disattivazione del tecnico');
-    }
-  };
+  // const handleDelete = async (id: number) => {
+  //   if (!confirm('Confermi la disattivazione del tecnico?')) return;
+  //
+  //   try {
+  //     await techniciansApi.delete(id);
+  //     loadTechnicians();
+  //   } catch (error) {
+  //     console.error('Failed to delete technician:', error);
+  //     alert('Errore nella disattivazione del tecnico');
+  //   }
+  // };
 
   const handleToggleActive = async (technician: Technician) => {
     try {

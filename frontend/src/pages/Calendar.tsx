@@ -175,10 +175,10 @@ function Calendar() {
           <Button variant="outline" size="sm" onClick={goToToday}>
             Oggi
           </Button>
-          <Button variant="outline" size="icon" onClick={prevMonth}>
+          <Button variant="outline" size="sm" onClick={prevMonth}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={nextMonth}>
+          <Button variant="outline" size="sm" onClick={nextMonth}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>

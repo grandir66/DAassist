@@ -13,7 +13,6 @@ import {
   FileText,
   Users,
   CheckCircle,
-  XCircle,
   Wrench
 } from 'lucide-react';
 import { ticketsApi, type Ticket } from '@/api/tickets';
@@ -375,8 +374,8 @@ export default function TicketDetail() {
 
                   {/* Intervento Immediato */}
                   <Button
-                    variant="default"
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    variant="primary"
+                    className="w-full"
                     onClick={handleCreateIntervention}
                     disabled={updating}
                   >
