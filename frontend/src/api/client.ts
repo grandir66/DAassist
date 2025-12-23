@@ -1,9 +1,11 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Use relative URL to leverage Vite proxy in development
+// In production, this should be set via VITE_API_URL environment variable
+const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 export const apiClient = axios.create({
-  baseURL: `${API_URL}/api/v1`,
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -33,7 +35,7 @@ apiClient.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
-          const response = await axios.post(`${API_URL}/api/v1/auth/refresh`, {
+          const response = await axios.post(`${API_URL}/auth/refresh`, {
             refresh_token: refreshToken,
           });
 
