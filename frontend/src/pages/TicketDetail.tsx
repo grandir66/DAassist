@@ -114,7 +114,7 @@ export default function TicketDetail() {
     try {
       setUpdating(true);
       await ticketsApi.update(ticket.id, {
-        tecnico_assegnato_id: tecnicoId
+        tecnico_assegnato_id: tecnicoId ?? undefined
       });
       await loadTicketData(ticket.id);
     } catch (error) {

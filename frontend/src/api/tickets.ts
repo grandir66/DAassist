@@ -61,6 +61,7 @@ export interface TicketCreate {
   richiedente_telefono?: string;
   referente_id?: number;
   referente_nome?: string;
+  contratto_id?: number;
 }
 
 export interface TicketUpdate {
