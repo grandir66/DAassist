@@ -62,21 +62,19 @@ services:
         condition: service_healthy
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-  # Frontend (React)
-  frontend:
+  # Nginx reverse proxy
+  nginx:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: daassist-frontend
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: daassist-nginx
     restart: unless-stopped
     ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - "80:80"
     depends_on:
       - backend
-    command: npm run dev
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
 
 volumes:
   postgres_data:
