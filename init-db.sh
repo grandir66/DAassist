@@ -1,38 +1,34 @@
 #!/bin/bash
-# Script per inizializzare il database
+# Script per inizializzare il database DAAssist
 
-echo "Inizializzazione database DAAssist..."
+set -e
+
+echo "=== Inizializzazione Database DAAssist ==="
+echo ""
+
+# Verifica che i container siano attivi
+echo "1. Verifica container..."
+docker compose ps | grep -q "daassist-backend.*Up" || { echo "❌ Backend non attivo"; exit 1; }
+docker compose ps | grep -q "daassist-postgres.*Up" || { echo "❌ Postgres non attivo"; exit 1; }
+echo "✓ Container attivi"
+echo ""
 
 # Esegui le migrazioni Alembic
+echo "2. Esecuzione migrazioni Alembic..."
 docker exec daassist-backend alembic upgrade head
+echo "✓ Migrazioni completate"
+echo ""
 
-# Crea utente admin di default
-docker exec daassist-backend python -c "
-from app.database import SessionLocal
-from app.models.tecnico import Tecnico
-from passlib.context import CryptContext
+# Esegui script SQL di inizializzazione
+echo "3. Inserimento dati iniziali..."
+docker exec -i daassist-postgres psql -U daassist -d daassist < init-db.sql
+echo "✓ Dati iniziali inseriti"
+echo ""
 
-pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
-db = SessionLocal()
-
-# Controlla se admin esiste già
-admin = db.query(Tecnico).filter(Tecnico.username == 'admin').first()
-if not admin:
-    admin = Tecnico(
-        username='admin',
-        email='admin@daassist.local',
-        nome='Admin',
-        cognome='Sistema',
-        password_hash=pwd_context.hash('admin'),
-        attivo=True
-    )
-    db.add(admin)
-    db.commit()
-    print('✓ Utente admin creato (username: admin, password: admin)')
-else:
-    print('✓ Utente admin già esistente')
-
-db.close()
-"
-
-echo "✓ Database inizializzato"
+echo "=== Inizializzazione Completata ==="
+echo ""
+echo "Credenziali di accesso:"
+echo "  Username: admin"
+echo "  Password: admin"
+echo ""
+echo "IMPORTANTE: Cambia la password al primo accesso!"

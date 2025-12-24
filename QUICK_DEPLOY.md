@@ -1,20 +1,26 @@
 # Deploy Veloce su LXC
 
-## Comandi da eseguire sul container LXC:
+## Prima installazione:
 
 ```bash
-# 1. Pull ultime modifiche
 cd /opt/daassist
 git pull
-
-# 2. Ferma tutto
-docker compose down
-
-# 3. Riavvia con nuova architettura
 docker compose up -d --build
 
-# 4. Verifica che sia tutto attivo
-docker compose ps
+# Aspetta che i container siano pronti (30-60 secondi)
+sleep 30
+
+# Inizializza il database
+bash init-db.sh
+```
+
+## Aggiornamenti successivi:
+
+```bash
+cd /opt/daassist
+git pull
+docker compose down
+docker compose up -d --build
 ```
 
 ## Accesso:
